@@ -1,54 +1,59 @@
-WAI-NSFW-illustrious-SDXL 專用角色選擇器
+NOTE: This is a Direct copy of WAI-NSFW-illustrious-SDXL Dedicated Character Selector
 
-easy to use stable-diffusion-webui for WAI-NSFW-illustrious-SDXL https://civitai.com/models/827184?modelVersionId=1183765
+Edits:    Trying to translate it all to English,
+          Attempt to get it workingin ComfyUI,
 
-相關安裝 dependence
+Easy-to-use stable-diffusion-webui for WAI-NSFW-illustrious-SDXL
+https://civitai.com/models/827184?modelVersionId=1183765
 
-add-detail-xl  https://huggingface.co/PvDeep/Add-Detail-XL/blob/main/add-detail-xl.safetensors
+Related Dependencies
 
-Pony: People's Works - ponyv4_noob1_2_adamW-000017  https://civitai.green/models/856285/pony-peoples-works?modelVersionId=1036362
+add-detail-xl
+https://huggingface.co/PvDeep/Add-Detail-XL/blob/main/add-detail-xl.safetensors
 
-ChihunHentai  https://civitai.com/models/106586
+Pony: People's Works - ponyv4_noob1_2_adamW-000017
+https://civitai.green/models/856285/pony-peoples-works?modelVersionId=1036362
 
-SDXL VAE  https://civitai.com/models/296576?modelVersionId=333245
+ChihunHentai
+https://civitai.com/models/106586
 
-如何安裝: 透過普通 URL 安裝即可
+SDXL VAE
+https://civitai.com/models/296576?modelVersionId=333245
 
-To install: Go to settings tab of stable-diffusion-webui, go to install from url, paste in this url and click install:
+How to Install: Just install through the regular URL
 
-更新 !!!!!如新功能無法使用請砍掉重新安裝!!!!
+To install: Go to the settings tab of stable-diffusion-webui, go to “install from url,” paste this URL, and click install:
 
-4/13 新增100名角色
+Update!!!!! If new features don’t work, please delete and reinstall!!!!
 
-2/23 調整部分預設，新增簡易手機模式
+4/13 Added 100 characters
 
-2/22 人物翻譯完成，動作部分恕我不太想翻譯(恥力不夠，不小心被人喵到不太好....)，部分prompt調整
+2/23 Adjusted some defaults, added simple mobile mode
 
-2/20 小調整及翻譯，處理切換太快產生當機bug，新增分開的隨機按鈕
+2/22 Character translations completed. I don’t really want to translate the actions part (not enough courage, don’t want people to catch me...), some prompt adjustments
 
-2/15 更新AI功能(預設、建議可自行申請API Key)、部分角色名稱修正、免額外下載檔案，AI使用上目前 llama-3.3-70b-versatile
+2/20 Minor tweaks and translations, fixed crash bug caused by switching too fast, added separate random button
 
-1/19 更新AI功能、部分角色名稱修正、下載Timeout 延長至10分鐘
+2/15 Updated AI features (default, you can apply for your own API key), corrected some character names, no extra file download needed, AI currently uses llama-3.3-70b-versatile
 
-AI 功能 支援 各家API ex: groq llama-3.3-70b-versatile (免費) 
+1/19 Updated AI features, corrected some character names, extended download timeout to 10 minutes
 
-設定方式:
+AI features support various APIs, e.g., groq llama-3.3-70b-versatile (free)
+
+Setup method:
 
 extensions\WAI-NSFW-illustrious-character-select\custom_settings.json
 
-將 ai 設定為 true
+Set ai to true and enter your api_key (apply yourself at https://console.groq.com/)
 
-並輸入 api_key (自行自 https://console.groq.com/ 申請)
+Example:
 
-ex:
-
+json
+Copy
+Edit
+{
     "ai": true,
-    
     "base_url": "https://api.groq.com/openai/v1/chat/completions",
-    
     "model": "llama-3.3-70b-versatile",
-    
-    "api_key":"gsk_UGQDzQaAxXrWx9ycd9OlW--------------------"
-    
-
-
+    "api_key": "gsk_UGQDzQaAxXrWx9ycd9OlW--------------------"
+}
