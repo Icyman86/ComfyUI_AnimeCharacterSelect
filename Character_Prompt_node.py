@@ -9,14 +9,15 @@ class AnimeCharacterPromptNode:
     ACTION_JSON = os.path.join(os.path.dirname(__file__), "action.json")
 
     # Voorladen
+    try:
     with open(CHARACTER_JSON, "r", encoding="utf-8") as f:
         char_data = json.load(f)
     with open(ACTION_JSON, "r", encoding="utf-8") as f:
         action_data = json.load(f)
-
-    # Karakterlijst: alle sleutels uit output_1.json
-    CHAR_NAMES = [list(entry.keys())[0] for entry in char_data]
-    ACTION_NAMES = list(action_data.keys())
+except Exception as e:
+    print("❌ Fout bij het laden van JSON-bestanden:", e)
+    char_data = []
+    action_data = {}
 
     @classmethod
     def INPUT_TYPES(cls):
