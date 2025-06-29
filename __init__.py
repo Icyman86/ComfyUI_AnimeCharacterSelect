@@ -39,24 +39,13 @@ class EnhancedCharacterPromptNode:
     CHARACTERS = [list(entry.keys())[0] for entry in char_data if isinstance(entry, dict) and len(entry) >= 1]
     ACTIONS = list(action_data.keys())
 
-    # Build extra_data maps for UI use
-    CHARACTER_PROMPT_MAP = {k: v if isinstance(v, str) else list(v.values())[0]
-                            for d in char_data if isinstance(d, dict) for k, v in d.items()}
-    ACTION_PROMPT_MAP = action_data
-
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "prompt": ("STRING", {"multiline": True, "dynamicPrompts": False, "default": ""}),
-                "Select to add Character": (
-                    ["Select the character to insert"] + cls.CHARACTERS,
-                    {"ui": {"extra_data": cls.CHARACTER_PROMPT_MAP}}
-                ),
-                "Select to add Action": (
-                    ["Select the action to insert"] + cls.ACTIONS,
-                    {"ui": {"extra_data": cls.ACTION_PROMPT_MAP}}
-                ),
+                "Select to add Character": (["Select the character to insert"] + cls.CHARACTERS,),
+                "Select to add Action": (["Select the action to insert"] + cls.ACTIONS,),
                 "clip": ("CLIP",),
             }
         }
@@ -95,19 +84,35 @@ class EnhancedCharacterPromptNode:
 
         action_prompt = self.action_data.get(selected_act, "")
 
-        final_prompt = ", ".join(p for p in [char_prompt, action_prompt, prompt] if p).strip()
+        # Logging to help debug
+        print(f"[DEBUG] char_prompt: {char_prompt}")
+        print(f"[DEBUG] action_prompt: {action_prompt}")
+        print(f"[DEBUG] input prompt: {prompt}")
+
+        # Build the live-updated editable prompt
+        new_prompt_parts = [char_prompt, action_prompt]
+        combined_prompt = ", ".join([p for p in new_prompt_parts if p])
+
+        if prompt.strip():
+            if combined_prompt:
+                prompt = combined_prompt + ", " + prompt
+        else:
+            prompt = combined_prompt
+
+        print(f"[DEBUG] final prompt: {prompt}")
 
         conditioning_output = []
         if clip:
             try:
-                cross_attn = clip.encode(final_prompt)
-                pooled = clip.encode_pooled(final_prompt)
-                cond_dict = {"pooled_output": pooled}
+                cross_attn = clip.encode(prompt)
+                # pooled = clip.encode_pooled(prompt)  # disabled for now due to missing method
+                # cond_dict = {"pooled_output": pooled}
+                cond_dict = {}
                 conditioning_output = [(cross_attn, cond_dict)]
             except Exception as e:
                 print(f"⚠️ CLIP encode failed: {e}")
 
-        return (final_prompt, preview_image, conditioning_output)
+        return (prompt, preview_image, conditioning_output)
 
     def decode_base64_to_image(self, base64_str):
         data = base64.b64decode(base64_str)
