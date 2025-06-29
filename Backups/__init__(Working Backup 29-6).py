@@ -4,25 +4,23 @@ import base64
 from PIL import Image
 from io import BytesIO
 
-import nodes  # Register JS directory
-nodes.EXTENSION_WEB_DIRS["EnhancedPromptNode"] = os.path.join(os.path.dirname(__file__), "js")
-
 
 class EnhancedCharacterPromptNode:
-    """ComfyUI node: select character + action, show preview image, output prompt + conditioning"""
+    """ComfyUI node: kies character + action, toon preview image, output prompt + conditioning"""
 
-    # JSON files with characters and actions
+    # JSON-bestanden met characters en actions
     CHARACTER_JSON_FILES = [
         os.path.join(os.path.dirname(__file__), f"output_{i}.json") for i in range(1, 12)
     ]
     ACTION_JSON = os.path.join(os.path.dirname(__file__), "action.json")
 
-    # Class variables for data and dropdowns
+    # Class-variabelen voor data en dropdowns
     char_data = []
     action_data = {}
     CHARACTERS = []
     ACTIONS = []
 
+    # Laad JSON data zodra class geladen wordt
     try:
         for path in CHARACTER_JSON_FILES:
             with open(path, "r", encoding="utf-8") as f:
@@ -36,6 +34,7 @@ class EnhancedCharacterPromptNode:
     except Exception as e:
         print("❌ Error loading action.json:", e)
 
+    # Vul dropdown lijsten op basis van geladen data
     CHARACTERS = [list(entry.keys())[0] for entry in char_data if isinstance(entry, dict) and len(entry) >= 1]
     ACTIONS = list(action_data.keys())
 
@@ -43,32 +42,28 @@ class EnhancedCharacterPromptNode:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "prompt": ("STRING", {"multiline": True, "dynamicPrompts": False, "default": ""}),
-                "Select to add Character": (["Select the character to insert"] + cls.CHARACTERS,),
-                "Select to add Action": (["Select the action to insert"] + cls.ACTIONS,),
-                "clip": ("CLIP",),
+                "character": (cls.CHARACTERS,),
+                "action": (cls.ACTIONS,),
+                "extra_prompt": ("STRING", {"multiline": True, "default": ""}),
+                "clip": ("CLIP",),  # optioneel, voor conditioning
             }
         }
 
     RETURN_TYPES = ("STRING", "IMAGE", "CONDITIONING")
-    RETURN_NAMES = ("prompt", "preview_image", "conditioning")
+    RETURN_NAMES = ("prompt", "preview_image", "CONDITIONING")
     FUNCTION = "build_prompt"
     CATEGORY = "Prompting/Anime Character"
 
-    def build_prompt(self, prompt, **kwargs):
-        selected_char = kwargs.get("Select to add Character", None)
-        selected_act = kwargs.get("Select to add Action", None)
-        clip = kwargs.get("clip")
-
-        preview_image = None
+    def build_prompt(self, character, action, extra_prompt, clip):
         char_prompt = ""
-        action_prompt = ""
+        action_prompt = EnhancedCharacterPromptNode.action_data.get(action, "")
+        preview_image = None
 
-        for entry in self.char_data:
-            if isinstance(entry, dict) and selected_char in entry:
-                value = entry[selected_char]
+        for entry in EnhancedCharacterPromptNode.char_data:
+            if isinstance(entry, dict) and character in entry:
+                value = entry[character]
                 if isinstance(value, str) and value.startswith("data:image"):
-                    char_prompt = selected_char
+                    char_prompt = character
                     preview_data = value
                 else:
                     char_prompt = value
@@ -79,12 +74,10 @@ class EnhancedCharacterPromptNode:
                         base64_data = preview_data.split("base64,", 1)[1]
                         preview_image = self.decode_base64_to_image(base64_data)
                     except Exception as e:
-                        print(f"⚠️ Base64 decode failed for {selected_char}: {e}")
+                        print(f"⚠️ Base64 decode failed for {character}: {e}")
                 break
 
-        action_prompt = self.action_data.get(selected_act, "")
-
-        final_prompt = ", ".join(p for p in [char_prompt, action_prompt, prompt] if p).strip()
+        final_prompt = ", ".join(p for p in [char_prompt, action_prompt, extra_prompt] if p).strip()
 
         conditioning_output = []
         if clip:
@@ -101,10 +94,10 @@ class EnhancedCharacterPromptNode:
     def decode_base64_to_image(self, base64_str):
         data = base64.b64decode(base64_str)
         try:
-            from comfy.utils import pil_to_tensor
-            return pil_to_tensor(Image.open(BytesIO(data)).convert("RGB"))
+            img = Image.open(BytesIO(data)).convert("RGB")
         except Exception as e:
             raise ValueError("Failed to decode base64 image") from e
+        return img
 
 
 NODE_CLASS_MAPPINGS = {
@@ -112,5 +105,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "EnhancedCharacterPromptNode": "Character + Action Prompt (Live Insert)",
+    "EnhancedCharacterPromptNode": "Character + Action Prompt + Preview",
 }
