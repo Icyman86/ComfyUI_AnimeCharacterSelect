@@ -91,7 +91,7 @@ class EnhancedCharacterPromptNode:
             except Exception as e:
                 print(f"⚠️ CLIP encode failed: {e}")
 
-        if conditioning is not None and not hasattr(conditioning, "copy"):
+        if conditioning is not None and not isinstance(conditioning, dict):
             conditioning = {"conditioning": conditioning}
 
         return (final_prompt, preview_image, conditioning)
