@@ -53,48 +53,42 @@ class EnhancedCharacterPromptNode:
     FUNCTION = "build_prompt"
     CATEGORY = "Prompting/Anime Character"
 
-    def build_prompt(self, character, action, extra_prompt, clip):
-        char_prompt = ""
-        action_prompt = self.action_data.get(action, "")
-        preview_image = None
+def build_prompt(self, character, action, extra_prompt, clip):
+    char_prompt = ""
+    action_prompt = self.action_data.get(action, "")
+    preview_image = None
 
-        for entry in self.char_data:
-            if isinstance(entry, dict) and character in entry:
-                value = entry[character]
+    for entry in self.char_data:
+        if isinstance(entry, dict) and character in entry:
+            value = entry[character]
+            if isinstance(value, str) and value.startswith("data:image"):
+                char_prompt = character
+                preview_data = value
+            else:
+                char_prompt = value
+                preview_data = entry.get("preview", "")
 
-                # Data in the json files can either be of the form
-                # {"character name": "prompt", "preview": "data:image..."}
-                # or {"prompt": "data:image..."}.  Detect which one we have
-                # by checking the value of the selected key.
-                if isinstance(value, str) and value.startswith("data:image"):
-                    char_prompt = character
-                    preview_data = value
-                else:
-                    char_prompt = value
-                    preview_data = entry.get("preview", "")
+            if isinstance(preview_data, str) and preview_data.startswith("data:image"):
+                try:
+                    base64_data = preview_data.split("base64,", 1)[1]
+                    preview_image = self.decode_base64_to_image(base64_data)
+                except Exception as e:
+                    print(f"⚠️ Base64 decode failed for {character}: {e}")
+            break
 
-                if isinstance(preview_data, str) and preview_data.startswith("data:image"):
-                    try:
-                        base64_data = preview_data.split("base64,", 1)[1]
-                        preview_image = self.decode_base64_to_image(base64_data)
-                    except Exception as e:
-                        print(f"⚠️ Base64 decode failed for {character}: {e}")
-                break
+    final_prompt = ", ".join(p for p in [char_prompt, action_prompt, extra_prompt] if p).strip()
 
-        final_prompt = ", ".join(p for p in [char_prompt, action_prompt, extra_prompt] if p).strip()
+    conditioning_output = None
+    if clip:
+        try:
+            cond = clip.encode(final_prompt)
+            # ComfyUI expects: [(cross_attn_tensor, extra_dict)]
+            conditioning_output = [(cond, {})]
+        except Exception as e:
+            print(f"⚠️ CLIP encode failed: {e}")
 
-        # Conditionering via CLIP als beschikbaar
-        conditioning = None
-        if clip:
-            try:
-                conditioning = clip.encode(final_prompt)
-            except Exception as e:
-                print(f"⚠️ CLIP encode failed: {e}")
+    return (final_prompt, preview_image, conditioning_output)
 
-        if conditioning is not None and not isinstance(conditioning, dict):
-            conditioning = {"conditioning": conditioning}
-
-        return (final_prompt, preview_image, conditioning)
 
     def decode_base64_to_image(self, base64_str):
         data = base64.b64decode(base64_str)
