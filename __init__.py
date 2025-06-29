@@ -84,8 +84,14 @@ class EnhancedCharacterPromptNode:
         final_prompt = ", ".join(p for p in [char_prompt, action_prompt, extra_prompt] if p).strip()
 
         # Conditionering via CLIP als beschikbaar
-        conditioning = clip.encode(final_prompt) if clip else None
-        if conditioning is not None and not isinstance(conditioning, dict):
+        conditioning = None
+        if clip:
+            try:
+                conditioning = clip.encode(final_prompt)
+            except Exception as e:
+                print(f"⚠️ CLIP encode failed: {e}")
+
+        if conditioning is not None and not hasattr(conditioning, "copy"):
             conditioning = {"conditioning": conditioning}
 
         return (final_prompt, preview_image, conditioning)
