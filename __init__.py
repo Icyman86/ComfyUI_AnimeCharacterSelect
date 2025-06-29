@@ -89,40 +89,6 @@ class EnhancedCharacterPromptNode:
             except Exception as e:
                 print(f"⚠️ CLIP encode failed: {e}")
 
-        return (final_prompt, preview_image, conditioning_output)def build_prompt(self, character, action, extra_prompt, clip):
-
-        char_prompt = ""
-        action_prompt = EnhancedCharacterPromptNode.action_data.get(action, "")
-        preview_image = None
-
-        for entry in EnhancedCharacterPromptNode.char_data:
-            if isinstance(entry, dict) and character in entry:
-                value = entry[character]
-                if isinstance(value, str) and value.startswith("data:image"):
-                    char_prompt = character
-                    preview_data = value
-                else:
-                    char_prompt = value
-                    preview_data = entry.get("preview", "")
-
-                if isinstance(preview_data, str) and preview_data.startswith("data:image"):
-                    try:
-                        base64_data = preview_data.split("base64,", 1)[1]
-                        preview_image = self.decode_base64_to_image(base64_data)
-                    except Exception as e:
-                        print(f"⚠️ Base64 decode failed for {character}: {e}")
-                break
-
-        final_prompt = ", ".join(p for p in [char_prompt, action_prompt, extra_prompt] if p).strip()
-
-        conditioning_output = []
-        if clip:
-            try:
-                cond = clip.encode(final_prompt)
-                conditioning_output = [(cond, {})]
-            except Exception as e:
-                print(f"⚠️ CLIP encode failed: {e}")
-
         return (final_prompt, preview_image, conditioning_output)
 
     def decode_base64_to_image(self, base64_str):
