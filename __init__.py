@@ -5,7 +5,7 @@ from PIL import Image
 from io import BytesIO
 
 import nodes  # Register JS directory
-nodes.EXTENSION_WEB_DIRS["EnhancedPromptNode"] = os.path.join(os.path.dirname(__file__), "js")
+nodes.EXTENSION_WEB_DIRS["ComfyUI_AnimeCharacterSelect"] = os.path.join(os.path.dirname(__file__), "js")
 
 
 class EnhancedCharacterPromptNode:
@@ -39,13 +39,24 @@ class EnhancedCharacterPromptNode:
     CHARACTERS = [list(entry.keys())[0] for entry in char_data if isinstance(entry, dict) and len(entry) >= 1]
     ACTIONS = list(action_data.keys())
 
+    # Build extra_data maps for UI use
+    CHARACTER_PROMPT_MAP = {k: v if isinstance(v, str) else list(v.values())[0]
+                            for d in char_data if isinstance(d, dict) for k, v in d.items()}
+    ACTION_PROMPT_MAP = action_data
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "prompt": ("STRING", {"multiline": True, "dynamicPrompts": False, "default": ""}),
-                "Select to add Character": (["Select the character to insert"] + cls.CHARACTERS,),
-                "Select to add Action": (["Select the action to insert"] + cls.ACTIONS,),
+                "Select to add Character": (
+                    ["Select the character to insert"] + cls.CHARACTERS,
+                    {"ui": {"extra_data": cls.CHARACTER_PROMPT_MAP}}
+                ),
+                "Select to add Action": (
+                    ["Select the action to insert"] + cls.ACTIONS,
+                    {"ui": {"extra_data": cls.ACTION_PROMPT_MAP}}
+                ),
                 "clip": ("CLIP",),
             }
         }
