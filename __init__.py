@@ -1,9 +1,8 @@
 import os
 import json
 import base64
-import numpy as np
-import torch
-import cv2
+from PIL import Image
+from io import BytesIO
 
 class EnhancedCharacterPromptNode:
     """ComfyUI node: kies character + action, toon preview image, output prompt + conditioning"""
@@ -50,23 +49,34 @@ class EnhancedCharacterPromptNode:
         }
 
     RETURN_TYPES = ("STRING", "IMAGE", "CONDITIONING")
-    RETURN_NAMES = ("prompt", "preview_image", "conditioning")
+    RETURN_NAMES = ("prompt", "preview_image", "CONDITIONING")
     FUNCTION = "build_prompt"
     CATEGORY = "Prompting/Anime Character"
 
     def build_prompt(self, character, action, extra_prompt, clip):
         char_prompt = ""
         action_prompt = self.action_data.get(action, "")
-        image_tensor = None
+        preview_image = None
 
         for entry in self.char_data:
             if isinstance(entry, dict) and character in entry:
-                char_prompt = entry[character]
-                preview_data = entry.get("preview", "")
-                if preview_data.startswith("data:image"):
+                value = entry[character]
+
+                # Data in the json files can either be of the form
+                # {"character name": "prompt", "preview": "data:image..."}
+                # or {"prompt": "data:image..."}.  Detect which one we have
+                # by checking the value of the selected key.
+                if isinstance(value, str) and value.startswith("data:image"):
+                    char_prompt = character
+                    preview_data = value
+                else:
+                    char_prompt = value
+                    preview_data = entry.get("preview", "")
+
+                if isinstance(preview_data, str) and preview_data.startswith("data:image"):
                     try:
                         base64_data = preview_data.split("base64,", 1)[1]
-                        image_tensor = self.decode_base64_to_tensor(base64_data)
+                        preview_image = self.decode_base64_to_image(base64_data)
                     except Exception as e:
                         print(f"⚠️ Base64 decode failed for {character}: {e}")
                 break
@@ -75,25 +85,18 @@ class EnhancedCharacterPromptNode:
 
         # Conditionering via CLIP als beschikbaar
         conditioning = clip.encode(final_prompt) if clip else None
+        if conditioning is not None and not isinstance(conditioning, dict):
+            conditioning = {"conditioning": conditioning}
 
-        return (final_prompt, image_tensor, conditioning)
+        return (final_prompt, preview_image, conditioning)
 
-    def decode_base64_to_tensor(self, base64_str):
-        nparr = np.frombuffer(base64.b64decode(base64_str), np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
-        if img is None:
-            raise ValueError("Failed to decode base64 image")
-        if img.shape[2] == 4:
-            alpha = img[:, :, 3]
-            img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
-            mask = torch.from_numpy((alpha / 255.0).astype(np.float32)).unsqueeze(0)
-        else:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            mask = torch.ones((1, img.shape[0], img.shape[1]), dtype=torch.float32)
-
-        img = img.astype(np.float32) / 255.0
-        img_tensor = torch.from_numpy(img).permute(2, 0, 1).unsqueeze(0)  # [1, 3, H, W]
-        return img_tensor
+    def decode_base64_to_image(self, base64_str):
+        data = base64.b64decode(base64_str)
+        try:
+            img = Image.open(BytesIO(data)).convert("RGB")
+        except Exception as e:
+            raise ValueError("Failed to decode base64 image") from e
+        return img
 
 
 NODE_CLASS_MAPPINGS = {
