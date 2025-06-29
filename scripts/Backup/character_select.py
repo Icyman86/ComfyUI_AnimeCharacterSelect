@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 import time
 
 #  *********     versioning     *****
-repo = "a1111"
+repo = "ComfyUI"
 
 try:
     import launch
