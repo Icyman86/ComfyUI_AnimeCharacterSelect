@@ -6,7 +6,8 @@ from io import BytesIO
 
 import nodes
 # Register JS web dir for custom hook
-nodes.EXTENSION_WEB_DIRS["ComfyUI_AnimeCharacterSelect"] = os.path.join(os.path.dirname(__file__), "js")
+WEB_DIRECTORY = os.path.join(os.path.dirname(__file__), "js")
+nodes.EXTENSION_WEB_DIRS["ComfyUI_AnimeCharacterSelect"] = WEB_DIRECTORY
 
 class EnhancedCharacterPromptNode:
     """ComfyUI node: select character + action, show preview image, editable prompt (live insert), output prompt + conditioning"""
