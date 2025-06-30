@@ -1,48 +1,50 @@
-// ComfyUI/custom_nodes/ComfyUI_AnimeCharacterSelect/js/enhanced_prompt.js
+// enhanced_prompt.js
+// For ComfyUI_AnimeCharacterSelect — live insert from dropdown to prompt field
 
-function insertIntoPrompt(promptField, text) {
-    if (!promptField || !text) return;
-    // Only add if it's not already at the start
-    if (!promptField.value.trim().startsWith(text)) {
-        if (promptField.value.trim().length > 0) {
-            promptField.value += ", " + text;
-        } else {
-            promptField.value = text;
-        }
-        promptField.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-}
+(function () {
+    // Wait until ComfyUI is fully loaded
+    function setup() {
+        // Scan for our node panels every second (ComfyUI reactivity is slow)
+        setInterval(() => {
+            document.querySelectorAll(".node").forEach(node => {
+                // Only patch nodes with our label!
+                const header = node.querySelector('.node_title');
+                if (!header || !header.innerText.includes("Character + Action Prompt")) return;
 
-function setupLiveInsert() {
-    document.querySelectorAll(".comfy-control").forEach(container => {
-        const label = container.querySelector("label");
-        const select = container.querySelector("select");
-        let promptField = null;
-        if (container.parentElement) {
-            promptField = container.parentElement.querySelector("textarea");
-        }
-        if (!label || !select || !promptField) return;
+                // Get our widgets inside the node
+                const selects = node.querySelectorAll("select");
+                const textarea = node.querySelector("textarea.comfy-multiline-input");
+                if (!textarea) return;
 
-        if (select.dataset._enhanced) return;
-        select.dataset._enhanced = "true";
+                // Attach only once
+                if (node.dataset.enhancedPromptPatched) return;
+                node.dataset.enhancedPromptPatched = "true";
 
-        // For character or action
-        if (label.innerText.includes("Select the character to insert") ||
-            label.innerText.includes("Select the action to insert")) {
-            select.addEventListener("change", () => {
-                const value = select.value;
-                if (value && !value.startsWith("Select")) {
-                    insertIntoPrompt(promptField, value);
-                    select.value = select.options[0].value; // Reset to top
-                    select.dispatchEvent(new Event("change"));
-                }
+                selects.forEach(select => {
+                    select.addEventListener("change", function () {
+                        const value = this.value;
+                        if (!value || value.startsWith("Select")) return;
+
+                        // Only append if not already present (prevent repeats)
+                        let text = textarea.value.trim();
+                        // Only add if not already at the start
+                        if (!text.includes(value)) {
+                            textarea.value = text.length > 0 ? text + ", " + value : value;
+                            // Fire event so ComfyUI sees the change
+                            textarea.dispatchEvent(new Event("input", { bubbles: true }));
+                        }
+                        // Reset dropdown to first item (optional)
+                        this.selectedIndex = 0;
+                    });
+                });
             });
-        }
-    });
-}
+        }, 1000); // ComfyUI sometimes destroys/rebuilds node UIs
+    }
 
-if (document.readyState !== "loading") setupLiveInsert();
-else document.addEventListener("DOMContentLoaded", setupLiveInsert);
-
-const observer = new MutationObserver(setupLiveInsert);
-observer.observe(document.body, { childList: true, subtree: true });
+    // Run after page load
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", setup);
+    } else {
+        setup();
+    }
+})();
