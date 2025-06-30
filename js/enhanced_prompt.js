@@ -1,46 +1,48 @@
-// enhanced_prompt.js
+// ComfyUI/custom_nodes/ComfyUI_AnimeCharacterSelect/js/enhanced_prompt.js
+
 function insertIntoPrompt(promptField, text) {
     if (!promptField || !text) return;
-    if (promptField.value.trim().length > 0) {
-        promptField.value += ", " + text;
-    } else {
-        promptField.value = text;
+    // Only add if it's not already at the start
+    if (!promptField.value.trim().startsWith(text)) {
+        if (promptField.value.trim().length > 0) {
+            promptField.value += ", " + text;
+        } else {
+            promptField.value = text;
+        }
+        promptField.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    // Zorg dat ComfyUI ziet dat het veld veranderd is
-    promptField.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-function setupEnhancedPromptHook() {
-    const observer = new MutationObserver(() => {
-        document.querySelectorAll(".node").forEach(nodeEl => {
-            const labelEls = nodeEl.querySelectorAll("label");
-            let promptField = nodeEl.querySelector("textarea");
+function setupLiveInsert() {
+    document.querySelectorAll(".comfy-control").forEach(container => {
+        const label = container.querySelector("label");
+        const select = container.querySelector("select");
+        let promptField = null;
+        if (container.parentElement) {
+            promptField = container.parentElement.querySelector("textarea");
+        }
+        if (!label || !select || !promptField) return;
 
-            if (!promptField) return;
+        if (select.dataset._enhanced) return;
+        select.dataset._enhanced = "true";
 
-            labelEls.forEach(label => {
-                const text = label.textContent.trim();
-                if (text === "Select to add Character" || text === "Select to add Action") {
-                    const select = label.parentElement.querySelector("select");
-                    if (!select || select.dataset.hooked) return;
-
-                    select.dataset.hooked = "true";
-
-                    select.addEventListener("change", () => {
-                        const value = select.value;
-                        if (value && !value.startsWith("Select")) {
-                            insertIntoPrompt(promptField, value);
-                            select.value = select.options[0].value;
-                            select.dispatchEvent(new Event("change")); // Reset dropdown
-                        }
-                    });
+        // For character or action
+        if (label.innerText.includes("Select the character to insert") ||
+            label.innerText.includes("Select the action to insert")) {
+            select.addEventListener("change", () => {
+                const value = select.value;
+                if (value && !value.startsWith("Select")) {
+                    insertIntoPrompt(promptField, value);
+                    select.value = select.options[0].value; // Reset to top
+                    select.dispatchEvent(new Event("change"));
                 }
             });
-        });
+        }
     });
-
-    observer.observe(document.body, { childList: true, subtree: true });
 }
 
-if (document.readyState !== "loading") setupEnhancedPromptHook();
-else document.addEventListener("DOMContentLoaded", setupEnhancedPromptHook);
+if (document.readyState !== "loading") setupLiveInsert();
+else document.addEventListener("DOMContentLoaded", setupLiveInsert);
+
+const observer = new MutationObserver(setupLiveInsert);
+observer.observe(document.body, { childList: true, subtree: true });
