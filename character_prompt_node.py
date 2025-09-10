@@ -4,20 +4,16 @@ import base64
 from PIL import Image
 from io import BytesIO
 
-# ---- GLOBAAL (buiten class) ----
-CHARACTER_FOLDER = os.path.dirname(__file__)
-CHARACTER_JSON_FILES = [
-    os.path.join(CHARACTER_FOLDER, f)
-    for f in os.listdir(CHARACTER_FOLDER)
-    if f.startswith("output") and f.endswith(".json")
-]
-
 class CharacterPromptNode:
     """
     Node: Character selection for anime prompts.
     Non-editable output string, includes preview image (base64 in output_X.json).
     """
 
+
+    CHARACTER_JSON_FILES = [
+        os.path.join(os.path.dirname(__file__), f"output_{i}.json") for i in range(1, 13)
+    ]
     char_data = []
     CHARACTERS = []
 
@@ -46,6 +42,7 @@ class CharacterPromptNode:
     def run(self, character):
         char_prompt = character
         preview_image = None
+        # Find preview
         for entry in self.char_data:
             if isinstance(entry, dict) and character in entry:
                 value = entry[character]
@@ -62,7 +59,7 @@ class CharacterPromptNode:
     def decode_base64_to_image(self, base64_str):
         data = base64.b64decode(base64_str)
         try:
-            # ComfyUI expects Pillow Image, not tensor, so just return Image
+            # Just return a Pillow Image, which ComfyUI will handle as IMAGE
             return Image.open(BytesIO(data)).convert("RGB")
         except Exception as e:
             raise ValueError("Failed to decode base64 image") from e
