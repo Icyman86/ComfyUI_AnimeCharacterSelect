@@ -1,4 +1,4 @@
-NOTE: This is a Direct copy of WAI-NSFW-illustrious-SDXL Dedicated Character Selector
+NOTE: This is a Fork of WAI-NSFW-illustrious-SDXL Dedicated Character Selector, now updated to work in ComfyUI and with English translation
 
 26/08/2026:         - Added thumbnail support for Characters
                     - Added the node to ComfyUI Registry so it can be found in Node manager inside ComfyUI
