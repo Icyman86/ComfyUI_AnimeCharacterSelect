@@ -28,7 +28,7 @@ Documentation = "https://github.com/Icyman86/ComfyUI_AnimeCharacterSelect/wiki"
 "Bug Tracker" = "https://github.com/Icyman86/ComfyUI_AnimeCharacterSelect/issues"
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "icyman86"
 DisplayName = "ComfyUI_AnimeCharacterSelect"
 Icon = ""
 includes = [] 
