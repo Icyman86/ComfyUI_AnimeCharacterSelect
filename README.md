@@ -1,12 +1,17 @@
 NOTE: This is a Direct copy of WAI-NSFW-illustrious-SDXL Dedicated Character Selector
 
-Edits:    Trying to translate it all to English,
-          Attempt to get it workingin ComfyUI,
+26/08/2026:         - Added thumbnail support for Characters
+                    - Added the node to ComfyUI Registry so it can be found in Node manager inside ComfyUI
+                    - Planned/Wish: more characters (tips to get more in issues if you have any way to find these) 
+
+Late 2025:          - translated code and most text to English,
+                    - Made it working in ComfyUI.
 
 Easy-to-use stable-diffusion-webui for WAI-NSFW-illustrious-SDXL
 https://civitai.com/models/827184?modelVersionId=1183765
 
-Related Dependencies
+
+Related Dependencies (mostly Outdated, works with many models, VAE and Lora's now)  
 
 add-detail-xl
 https://huggingface.co/PvDeep/Add-Detail-XL/blob/main/add-detail-xl.safetensors
@@ -43,17 +48,3 @@ AI features support various APIs, e.g., groq llama-3.3-70b-versatile (free)
 Setup method:
 
 extensions\WAI-NSFW-illustrious-character-select\custom_settings.json
-
-Set ai to true and enter your api_key (apply yourself at https://console.groq.com/)
-
-Example:
-
-json
-Copy
-Edit
-{
-    "ai": true,
-    "base_url": "https://api.groq.com/openai/v1/chat/completions",
-    "model": "llama-3.3-70b-versatile",
-    "api_key": "gsk_UGQDzQaAxXrWx9ycd9OlW--------------------"
-}
