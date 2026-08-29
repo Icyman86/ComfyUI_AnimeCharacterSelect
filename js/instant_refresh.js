@@ -4,72 +4,165 @@ app.registerExtension({
     name: "Comfy.AnimeCharacterSelectRefresh",
     async nodeCreated(node) {
         if (node.comfyClass === "CharacterPromptNode") {
-            const widget = node.widgets?.find((w) => w.name === "character");
-            if (widget) {
-                const originalCallback = widget.callback;
+            const filterWidget = node.widgets?.find((w) => w.name === "category_filter");
+            const characterWidget = node.widgets?.find((w) => w.name === "character");
+            
+            if (characterWidget && filterWidget) {
+                const originalCharCallback = characterWidget.callback;
 
-                // Track a dedicated internal variable for just the portrait aspect ratio height
+                // 1. CAPTURE THE TRUE MASTER LIST AT INITIALIZATION TIME
+                const masterList = [...characterWidget.options.values];
                 node._previewImgHeight = 0;
 
                 const updateNodePreview = function(characterName) {
-                    if (!characterName) return;
-                    
-                    const img = new Image();
-                    img.src = `/anime_character_select/get_thumb?character=${encodeURIComponent(characterName)}&t=${Date.now()}`;
-                    
-                    img.onload = function() {
-                        node.imgs = [img];
+                    try {
+                        let cleanName = characterName;
+                        if (Array.isArray(cleanName)) {
+                            cleanName = cleanName[0] || "";
+                        }
+                        if (typeof cleanName !== "string") {
+                            cleanName = String(cleanName);
+                        }
+
+                        if (!cleanName || cleanName.trim() === "" || cleanName.startsWith("--") || cleanName === "undefined") {
+                            console.log("[DEBUG] Preview skip due to invalid character name:", cleanName);
+                            return;
+                        }
                         
-                        // Calculate precise responsive aspect ratio dimensions based on node width
-                        const drawWidth = node.size[0] - 20; 
-                        node._previewImgHeight = (img.height / img.width) * drawWidth;
+                        const img = new Image();
+                        img.src = `/anime_character_select/get_thumb?character=${encodeURIComponent(cleanName)}&t=${Date.now()}`;
                         
-                        // Explicitly query the original clean core height of the text/dropdown layout
-                        const nativeWidgetsHeight = originalComputeSize.apply(node);
+                        img.onload = function() {
+                            try {
+                                // Assign the downloaded texture safely to the node model
+                                node.imgs = [img];
+                                
+                                if (!node.size || !Array.isArray(node.size)) {
+                                    node.size = [300, 150]; 
+                                }
+
+                                const drawWidth = node.size[0] - 20; 
+                                node._previewImgHeight = (img.height / img.width) * drawWidth;
+                                
+                                const nativeWidgetsHeight = originalComputeSize.apply(node);
+                                const coreLayoutHeight = Array.isArray(nativeWidgetsHeight) ? nativeWidgetsHeight[1] : 100;
+                                
+                                // Expand the node container bounds dynamically
+                                node.size = [node.size[0], coreLayoutHeight + node._previewImgHeight + 15];
+                                node.setDirtyCanvas(true, true);
+                            } catch (innerImgError) {
+                                console.error("IMAGE ONLOAD ERROR:", innerImgError);
+                            }
+                        };
+
+                        img.onerror = function() {
+                            console.error(`IMAGE FETCH REJECTED BY SERVER FOR: "${cleanName}"`);
+                        };
+
+                    } catch (imgSetupError) {
+                        console.error("PREVIEW GENERATOR FAILURE:", imgSetupError);
+                    }
+                };
+
+                // 2. THE CASCADING FILTER LOGIC
+                filterWidget.callback = function(value) {
+                    try {
+                        let filteredSubset = [];
+                        const targetCategory = value.toLowerCase();
+
+                        if (targetCategory === "all") {
+                            filteredSubset = [...masterList];
+                        } else {
+                            filteredSubset = masterList.filter(item => 
+                                String(item).toLowerCase().includes(targetCategory)
+                            );
+                        }
+
+                        if (filteredSubset.length === 0) {
+                            filteredSubset = ["-- No Matches --"];
+                        }
+
+                        // Rebind dropdown choices array
+                        characterWidget.options.values = filteredSubset;
                         
-                        // Force a strict, non-accumulating size array calculation [width, height]
-                        node.size = [node.size[0], nativeWidgetsHeight[1] + node._previewImgHeight + 15];
-                        
+                        // FIX: Secure the first text item primitive string directly from our verified array
+                        const targetSelection = filteredSubset[0] || "";
+                        characterWidget.value = targetSelection;
+
+                        // FIX: Pass our pristine, verified selection string directly into the thumbnail engine
+                        updateNodePreview(targetSelection);
                         node.setDirtyCanvas(true, true);
-                    };
+                    } catch (filterError) {
+                        console.error("FILTER PROCESSING FAILURE:", filterError);
+                    }
                 };
 
-                widget.callback = function (value) {
-                    if (originalCallback) originalCallback.apply(this, arguments);
-                    updateNodePreview(value);
+                characterWidget.callback = function (value) {
+                    try {
+                        if (originalCharCallback) originalCharCallback.apply(this, arguments);
+                        updateNodePreview(value);
+                    } catch (charWidgetError) {
+                        console.error("WIDGET INTERACTION FAILURE:", charWidgetError);
+                    }
                 };
 
-                // --- FIXED SIZING HOOK ---
-                // We pull clean base dimensions every single time, stopping the infinite growth loop
+                // --- STRUCTURAL CANVAS DIMENSION SIZING HOOKS ---
                 const originalComputeSize = node.computeSize;
                 node.computeSize = function() {
-                    const size = originalComputeSize.apply(this, arguments);
-                    if (this._previewImgHeight > 0) {
-                        // Simply append the unique portrait height to the baseline clean text layout
-                        size[1] = size[1] + this._previewImgHeight + 15;
+                    try {
+                        const size = originalComputeSize.apply(this, arguments);
+                        if (this._previewImgHeight > 0 && Array.isArray(size)) {
+                            size[1] = size[1] + this._previewImgHeight + 15;
+                        }
+                        return size;
+                    } catch (sizeHookError) {
+                        console.error("COMPUTE SIZE CRASH:", sizeHookError);
+                        return;
                     }
-                    return size;
                 };
 
                 node.onDrawBackground = function(ctx) {
-                    if (this.imgs && this.imgs.length > 0) {
-                        const img = this.imgs[0];
-                        if (img.width) {
-                            // Find exactly where the text dropdown elements structurally terminate
-                            const nativeWidgetsHeight = originalComputeSize.apply(this);
-                            const yOffset = nativeWidgetsHeight[1] + 5; 
+                    try {
+                        if (node.imgs && Array.isArray(node.imgs) && node.imgs.length > 0) {
+                            const img = node.imgs[0];
                             
-                            const drawWidth = this.size[0] - 20; 
-                            const drawHeight = (img.height / img.width) * drawWidth; 
-                            const xOffset = 10; 
-                            
-                            // Stamp the character portrait precisely onto the canvas view
-                            ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
+                            if (img){
+                              console.error("img test passed")
+                            }
+                            if (img.width){
+                                console.error("img.width test passed")
+                            }
+                            if (node.size){
+                                console.error("node.size test passed")
+                            }
+                            if (node.size.length > 1){
+                                console.error("Array.isArray test passed")
+                            }
+                            if (img && img.width && node.size && node.size.length > 1){
+                                const nativeWidgetsHeight = originalComputeSize.apply(this);
+                                const coreHeight = Array.isArray(nativeWidgetsHeight) ? nativeWidgetsHeight[1] : 100;
+                                const yOffset = coreHeight + 5; 
+                                
+                                const drawWidth = node.size[0] - 20; 
+                                const drawHeight = (img.height / img.width) * drawWidth; 
+                                const xOffset = 10; 
+                                
+                                ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
+                            }
                         }
+                    } catch (drawBackgroundError) {
+                        console.error("BACKGROUND DRAW MATRIX ENGINE FAILURE:", drawBackgroundError);
                     }
                 };
 
-                setTimeout(() => updateNodePreview(widget.value), 200);
+                setTimeout(() => {
+                    try {
+                        const startupValue = Array.isArray(characterWidget.value) ? characterWidget.value[0] : characterWidget.value;
+                        updateNodePreview(startupValue);
+                    } catch (bootError) {
+                        console.error("INITIALIZATION RUNTIME ERROR:", bootError);
+                    }
+                }, 200);
             }
         }
     }

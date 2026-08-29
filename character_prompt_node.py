@@ -62,13 +62,6 @@ class CharacterPromptNode:
     # ---------------------------------
 
 
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "character": (cls.CHARACTERS,),
-            }
-        }
 
     RETURN_TYPES = ("STRING", "IMAGE")
     RETURN_NAMES = ("character_prompt", "preview_image")
@@ -76,8 +69,58 @@ class CharacterPromptNode:
     CATEGORY = "Prompting/Anime Character"
     # Tells ComfyUI's frontend canvas to reserve space for image drawings
     OUTPUT_NODE = True 
+    # create Filters
+    FILTER_OPTIONS =["ALL",]
+    for ele in CHARACTERS:
+      x = ele.split(',')[0].strip()
+      if x not in FILTER_OPTIONS:
+        FILTER_OPTIONS.append(x)
 
-    def run(self, character):
+
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                # Dropdown 1: The Category Filter
+                "category_filter": (cls.FILTER_OPTIONS, {"default": "ALL"}),
+                
+                # Dropdown 2: Your original master list of 1000+ items
+                "character": (cls.CHARACTERS,), 
+            }
+        }
+
+
+    # THE DYNAMIC DROPDOWN FILTER ENGINE (Executed natively by ComfyUI frontend)
+    # The exact name 'get_dynamic_characters' maps to our method definition
+    @classmethod
+    def get_dynamic_characters(cls, category_filter="ALL", **kwargs):
+        # If 'ALL' is chosen, combine all lists to show every single item
+        if category_filter == "ALL":
+            all_characters = []
+            for character_list in cls.DATA.values():
+                all_characters.extend(character_list)
+            return all_characters
+        
+        # Otherwise, instantly fetch only the array belonging to that specific category
+        return cls.DATA.get(category_filter, ["-- No Characters Found --"])
+
+
+
+
+    # THIS IS THE MAGIC JAVASCRIPT/PYTHON TRIGGER FOR MODERN COMFYUI
+    # When filter_category changes, this dynamically rewrites the 'character' dropdown options
+    @classmethod
+    def VALIDATE_INPUTS(cls, category_filter, character):
+        return True
+
+
+    def execute(self, filter_category, character):
+        # Your normal node generation code continues here...
+        print(f"Selected Character: {character}")
+        return (character,)
+    
+    def run(self, character, **kwargs):
         char_prompt = self.DATA[character]['prompt']
         preview_image = None
         if 1:

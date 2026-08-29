@@ -1,22 +1,26 @@
 NOTE: This is a Fork of WAI-NSFW-illustrious-SDXL Dedicated Character Selector, now updated to work in ComfyUI and with English translation
 
-26/08/2026:         - Added thumbnail support for Characters
-                    - Added the node to ComfyUI Registry so it can be found in Node manager inside ComfyUI
-                    - Planned/Wish: more characters (tips to get more in issues if you have any way to find these) 
+
+29/08/2026:	    - Added a category\_filter so there can be filtered on series/show/collection. (thank you @atacms on GitHub for the suggestion and the code) 
+
+26/08/2026:         - Added thumbnail support for Characters (Thank you @atacms on GitHub for the suggestion \& most of the code)
+- Added the node to ComfyUI Registry so it can be found in Node manager inside ComfyUI
+- Planned/Wish: more characters (tips to get more in issues if you have any way to find these)
 
 Late 2025:          - translated code and most text to English,
-                    - Made it working in ComfyUI.
+- Made it working in ComfyUI.
 
 Easy-to-use stable-diffusion-webui for WAI-NSFW-illustrious-SDXL
 https://civitai.com/models/827184?modelVersionId=1183765
 
 
-Related Dependencies (mostly Outdated, works with many models, VAE and Lora's now)  
+
+Related Dependencies (mostly Outdated, works with many models, VAE and Lora's now)
 
 add-detail-xl
 https://huggingface.co/PvDeep/Add-Detail-XL/blob/main/add-detail-xl.safetensors
 
-Pony: People's Works - ponyv4_noob1_2_adamW-000017
+Pony: People's Works - ponyv4\_noob1\_2\_adamW-000017
 https://civitai.green/models/856285/pony-peoples-works?modelVersionId=1036362
 
 ChihunHentai
@@ -47,4 +51,5 @@ AI features support various APIs, e.g., groq llama-3.3-70b-versatile (free)
 
 Setup method:
 
-extensions\WAI-NSFW-illustrious-character-select\custom_settings.json
+extensions\\WAI-NSFW-illustrious-character-select\\custom\_settings.json
+
